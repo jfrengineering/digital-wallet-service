@@ -1,0 +1,202 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+paths:
+  /transactions:
+    post:
+      tags:
+      - transaction-controller
+      summary: Create a Debit/Credit Transaction
+      operationId: createTransaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+        required: true
+      responses:
+        "400":
+          description: "Bad Transaction request, one or more fields with invalid values"
+          content:
+            text/plain:
+              schema:
+                type: string
+        "202":
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionBalanceResponse'
+        "406":
+          description: Rejected Transaction with wrong 'amount'
+          content:
+            text/plain:
+              schema:
+                type: string
+        "404":
+          description: Customer not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        "409":
+          description: Rejected Transaction with repeated 'correlationId'
+          content:
+            text/plain:
+              schema:
+                type: string
+  /transactions/{customerId}:
+    get:
+      tags:
+      - transaction-controller
+      summary: Get Customer Transactions given its id
+      operationId: getCustomerTransactions
+      parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: pageNumber
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: pageSize
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "200":
+          description: Page of Transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionsPageResponse'
+        "404":
+          description: Customer not found
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    TransactionRequest:
+      required:
+      - amount
+      - correlationId
+      - customerId
+      - operation
+      type: object
+      properties:
+        correlationId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        operation:
+          type: string
+          enum:
+          - ADD
+          - WITHDRAW
+    TransactionBalanceResponse:
+      type: object
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        transaction:
+          $ref: '#/components/schemas/TransactionResponse'
+        updatedBalance:
+          type: number
+    TransactionResponse:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        operation:
+          type: string
+          enum:
+          - ADD
+          - WITHDRAW
+        createdAt:
+          type: string
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        sort:
+          $ref: '#/components/schemas/SortObject'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        paged:
+          type: boolean
+        unpaged:
+          type: boolean
+    SortObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        sorted:
+          type: boolean
+        unsorted:
+          type: boolean
+    TransactionsPageResponse:
+      type: object
+      properties:
+        customerId:
+          type: string
+          format: uuid
+          writeOnly: true
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionResponse'
+        number:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        pageable:
+          $ref: '#/components/schemas/PageableObject'
+        last:
+          type: boolean
+        totalPages:
+          type: integer
+          format: int32
+        sort:
+          $ref: '#/components/schemas/SortObject'
+        first:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
